@@ -1,100 +1,250 @@
-## 🖥️ NexOS Scheduler — CPU Process Simulator
+# MediSimple
 
-> _An interactive, browser-based CPU scheduling simulator that lets you explore, compare, and master operating system scheduling algorithms in real time._
+**Understand your health records, finally.**
 
----
-
-## Inspiration
-
-CPU scheduling is one of the most fundamental — and notoriously hard to visualise — concepts in operating systems. Most textbooks describe FCFS, Round Robin, and Priority Scheduling with static diagrams and dry tables. We wanted to build something you could actually **feel**: watch a Gantt chart animate tick by tick, see starvation warnings fire in real time, and experiment with an adaptive algorithm that switches strategies on the fly. NexOS Scheduler was born from that frustration with passive learning.
+MediSimple is a single-file, browser-based medical document interpreter powered by Claude AI. Upload a photo of a lab report, paste discharge notes, or drop in a prescription — and get a plain-English breakdown in seconds. No account required. No data leaves your device.
 
 ---
 
-## What It Does
+## Table of Contents
 
-NexOS Scheduler is a fully self-contained, single-file web app that simulates CPU process scheduling from first principles. Here's what you can do with it:
-
-**Core Simulation**
-- Add up to 16 processes with custom arrival time, burst time, and priority
-- Choose from **8 scheduling algorithms**: FCFS, SJF, SRTF, Priority (preemptive & non-preemptive), Round Robin, MLFQ, and the custom **Adaptive Hybrid** mode
-- Step through the simulation tick-by-tick or run it at variable speed
-- Watch a live **Gantt chart**, per-process state cards, and a full statistics table update in real time
-
-**Analytics & Insights**
-- 6-metric dashboard: avg wait time, turnaround time, response time, throughput, CPU utilisation, and context switches
-- **Starvation detection** with inline warnings when processes are starved beyond a threshold
-- **Anomaly detection** panel that flags scheduling inefficiencies mid-run
-- **ML-style algorithm recommender** that scores each algorithm (A–D) against your current workload and explains its reasoning
-- **What-if analysis**: tweak quantum size and see projected metric changes before committing
-
-**Advanced Features (v4)**
-- **Adaptive Hybrid Algorithm** — dynamically switches between FCFS, SRTF, and RR based on live workload signals (queue depth, average remaining burst, max wait time), with a decision log
-- **Energy & Thermal simulation** — tracks CPU temperature, total energy consumption, throttle events, and cgroup quota enforcement
-- **MLFQ queue visualisation** — see processes move between priority queues in real time
-- **Heatmap view** — per-process CPU time heatmap across the simulation timeline
-- **Batch runner** — run all algorithms against your process set in one click for instant comparison
-- **Run History** with tagging, notes, side-by-side comparison of saved runs, and a detailed replay modal
-- **CSV / perf-trace import** — drag and drop a trace file to seed the simulator with real workload data
-- **Container / cgroup simulation** — set CPU quotas and watch throttle behaviour
-- **Challenges & Achievements** — guided optimisation challenges (e.g. "keep avg wait < 5ms") and an achievement system that unlocks as you explore
-
-**Learn Mode**
-- In-app reference covering all 8 algorithms with complexity, starvation risk, and use-case breakdowns
-- Real-world mapping (Linux CFS, Windows scheduler, database I/O scheduling, game engines)
-- Guided lab exercises with objectives and hints
+- [Overview](#overview)
+- [Features](#features)
+- [How It Works](#how-it-works)
+- [Getting Started](#getting-started)
+- [Using MediSimple](#using-medisimple)
+  - [Uploading a Document](#uploading-a-document)
+  - [Reading the Results](#reading-the-results)
+  - [Ask Follow-Up Questions](#ask-follow-up-questions)
+  - [Export as Image](#export-as-image)
+  - [Compare Two Visits](#compare-two-visits)
+  - [Medication Schedule](#medication-schedule)
+  - [Symptom Journal](#symptom-journal)
+- [Privacy & Data Handling](#privacy--data-handling)
+- [Reading Level Selector](#reading-level-selector)
+- [Dark Mode](#dark-mode)
+- [Document History & Trends](#document-history--trends)
+- [Supported Document Types](#supported-document-types)
+- [Technical Notes](#technical-notes)
+- [Disclaimer](#disclaimer)
 
 ---
 
-## How We Built It
+## Overview
 
-NexOS Scheduler is built as a **single, dependency-light HTML file** — no build step, no server, no framework. The key technology decisions:
+Medical documents are dense, jargon-heavy, and written for clinicians — not patients. MediSimple bridges that gap. It uses Claude's vision and language capabilities to extract every term, value, and finding from your document and translate it into language anyone can understand.
 
-- **Vanilla JS + CSS custom properties** for the entire simulation engine and UI, keeping the bundle at zero
-- **Chart.js** (CDN) for the trade-off radar and bar charts on the Compare and Tradeoff pages
-- **CSS animations & transitions** throughout — the Gantt bars, process cards, and achievement toasts are all pure CSS
-- The simulation core uses a **tick-based state machine** where each `simStep()` call advances time by one unit, evaluates the selected scheduling policy, updates process states (new → ready → running → waiting → done), and re-renders the view
-- Algorithm selection is handled by a strategy pattern — each algorithm is a pure function that picks the next process from the ready queue, making it easy to extend
-- The **Adaptive Hybrid** algorithm wraps the core `simStep()` and inspects live queue metrics each tick to decide which base algorithm to delegate to, logging every switch decision
-- `localStorage` is used for run history, achievement state, and algorithm usage tracking — no backend required
+Everything runs in your browser. The only outbound call is to the Claude API to perform the analysis — your raw files are never sent to any MediSimple server and are never stored anywhere.
 
 ---
 
-## Challenges We Ran Into
+## Features
 
-- **Preemptive vs. non-preemptive correctness**: Getting SRTF and preemptive Priority to interrupt mid-burst correctly while keeping the Gantt chart contiguous took careful state management — idle slots, context switch penalties, and partial burst tracking all had to compose cleanly.
-- **MLFQ implementation**: Multi-Level Feedback Queue requires aging, promotion/demotion logic, and per-queue quantum settings. Balancing visual clarity with algorithmic correctness across 3 queues was tricky.
-- **Single-file architecture at scale**: At ~3,600 lines the file is large. Keeping CSS variables consistent, avoiding layout collisions between 9 pages, and ensuring all feature extensions (v4 wraps the original functions) don't break earlier behaviour required discipline.
-- **Energy/thermal model**: Simulating CPU temperature and throttling in a meaningful but not misleading way — the model is intentionally simplified but visually responsive so learners can connect scheduling decisions to power behaviour.
-
----
-
-## Accomplishments We're Proud Of
-
-- A simulator that genuinely **teaches through interaction** — the step-by-step explainer, starvation badges, and ML recommender together form a feedback loop that helps users build intuition, not just watch numbers change
-- The **Adaptive Hybrid algorithm** — it's not just a demo trick; it implements a real heuristic (queue depth + wait time + remaining burst) that mirrors how production schedulers blend policies
-- **Zero-dependency, single-file deployment** — anyone can open it offline, fork it, embed it in a course, or extend it without a build toolchain
-- A complete **gamification layer** (challenges, achievements, labs) that encourages systematic exploration of all 8 algorithms
-
----
-
-## What We Learned
-
-- How subtle the performance differences between scheduling policies are — SRTF is theoretically optimal for average wait time but its overhead and starvation risk make it impractical in many real workloads
-- How much **visualisation design** matters for learning tools: the same simulation with and without the Gantt chart, state cards, and anomaly panel feels like a completely different learning experience
-- That a well-structured **single-file app** can scale surprisingly far before needing a framework — but naming discipline and CSS custom properties are non-negotiable at this scale
-
----
-
-## What's Next
-
-- **Export to PDF/PNG** — generate a shareable report card for a simulation run
-- **Real Linux perf trace import** — parse `perf sched` output directly so users can compare simulated vs. kernel behaviour on the same workload
-- **Collaborative mode** — let two users configure competing process sets and race their schedulers
-- **Priority inversion demo** — a dedicated scenario showing the classic Mars Pathfinder bug and how priority inheritance resolves it
-- **Mobile-responsive layout** — the current UI assumes a wide screen; a simplified mobile view would open it to more learners
-- **Pluggable algorithm API** — let users write and inject their own scheduling function in a sandboxed editor, making NexOS a platform rather than a fixed simulator
+| Feature | Description |
+|---|---|
+| **AI Document Analysis** | Claude reads images, PDFs, and pasted text to extract all medical data |
+| **Plain-English Summary** | 2–4 sentence overview of what the document says |
+| **Severity Rating** | Normal / Watch / Urgent — with a one-line reason |
+| **Medical Terms Explained** | Every abbreviation, drug name, and clinical term decoded |
+| **Flagged Values** | Out-of-range results highlighted with explanations |
+| **Values at a Glance** | All numeric results (labs, vitals) in a scannable grid |
+| **Drug Interaction Check** | Flags known interactions between all medications in the document |
+| **Doctor Questions** | 4–6 specific questions to bring to your next appointment |
+| **Next Steps** | Concrete actions based on the findings |
+| **Follow-Up Chat** | Ask anything about your document in plain language |
+| **Symptom Journal** | Log symptoms between visits; included as context in your next analysis |
+| **Reading Level Selector** | ELI10 / Standard / Keep medical terms |
+| **Export as Image** | Save a Summary Card, Doctor Report, or Medication Schedule as a PNG |
+| **Copy for Doctor** | One-click plain-text block to paste into a patient portal message |
+| **Compare Visits** | AI-powered side-by-side comparison of any two documents |
+| **Medication Schedule** | Smart time-slot assignment (morning / midday / evening / bedtime) based on each drug |
+| **Trend Tracking** | Tracks numeric values across multiple lab results over time |
+| **Dark Mode** | Full dark theme, persisted across sessions |
+| **Privacy by Design** | No account, no server storage, no raw document retention |
 
 ---
 
-## Try It Out Here:
-https://anirudh-mannattil1991.github.io/nexos-scheduler/
+## How It Works
+
+1. You upload a file or paste text into MediSimple.
+2. Your document is sent — along with a structured prompt — to the [Claude API](https://www.anthropic.com/api) (`claude-sonnet-4-20250514`) via a direct browser request.
+3. Claude returns a structured JSON object containing the full analysis.
+4. MediSimple renders that JSON into the result cards you see on screen.
+5. Only the AI-generated summary (never your raw document) is optionally saved to your browser's `localStorage` for trend tracking.
+
+```
+Your browser → Claude API → Structured JSON → Rendered results
+                ↑
+        (raw file cleared from memory immediately after)
+```
+
+---
+
+## Getting Started
+
+MediSimple is a single HTML file — no installation, no build step, no dependencies to install.
+
+**To run it:**
+
+1. Download `MediSimple_v3.html`
+2. Open it in any modern browser (Chrome, Firefox, Safari, Edge)
+3. That's it
+
+> **Note:** MediSimple requires an active internet connection to reach the Claude API. The API key is handled at the proxy layer — no key configuration is needed by the user.
+
+---
+
+## Using MediSimple
+
+### Uploading a Document
+
+Select the document type from the tab bar at the top of the upload card:
+
+- **Lab Result** — blood panels, metabolic panels, urinalysis
+- **Prescription / Meds** — medication lists, prescription printouts
+- **Discharge Summary** — hospital discharge paperwork
+- **Radiology Report** — X-ray, MRI, CT, ultrasound reports
+- **Other** — any other clinical document
+
+Then choose your input method:
+
+- **Upload file / photo** — drag and drop, or click to browse. Accepts JPG, PNG, HEIC, WEBP, PDF, and multiple files at once. Claude Vision reads handwriting too.
+- **Paste text** — copy and paste the text content of a document directly.
+
+Fill in the date and an optional label (e.g. "Annual blood panel – April 2026"), then click **Analyze**.
+
+You can also click **Load sample** to see MediSimple in action with example data before uploading your own documents.
+
+### Reading the Results
+
+Results are organised into cards:
+
+- **Severity banner** — the overall assessment (Normal / Watch / Urgent) with a one-line explanation
+- **Flagged findings** — anything out of range or worth noting, colour-coded by severity (info / warning / critical)
+- **Medical terms explained** — every term broken down into plain language, with normal ranges where applicable
+- **Values at a glance** — all numeric results in a grid, colour-coded by status
+- **Ask your doctor** — specific, document-relevant questions to raise at your next appointment
+- **Next steps** — concrete actions to take based on the findings
+- **Drug interaction check** — any known interactions between medications mentioned in the document
+
+### Ask Follow-Up Questions
+
+Below the results cards is a chat panel. Type any question about your document — or tap one of the suggested chips — and get a plain-English answer from Claude with context from your specific document.
+
+Example questions:
+- "What does this mean for my diet?"
+- "Should I be worried about any of these values?"
+- "What follow-up tests should I ask for?"
+
+Answers are formatted as readable prose — no markdown symbols.
+
+### Export as Image
+
+Click the **Export** button in the result header to open the export panel. Choose from three export formats:
+
+**Summary Card** — a clean one-page overview showing severity, key values, and your doctor questions list. Designed to share with a family member or carer.
+
+**Doctor Report** — a structured patient report with flagged values, questions, and next steps. Formatted for pasting into a patient portal or printing before an appointment.
+
+**Medication Schedule** — a time-blocked daily schedule with each medication assigned to its recommended time slot (see [Medication Schedule](#medication-schedule) below).
+
+Click **Save as Image** to download a high-resolution PNG of whichever view is selected. You can also use **Copy for Doctor** in the result header to copy a plain-text version directly to your clipboard.
+
+### Compare Two Visits
+
+When you have two or more documents in your history, a **Compare** button appears in the result header. Click it, select the second document, and MediSimple asks Claude to compare both summaries and return:
+
+- What **improved** between visits
+- What **worsened** between visits
+- What **stayed the same**
+- A short narrative describing the overall trend
+
+### Medication Schedule
+
+The Medication Schedule export automatically assigns each detected medication to its clinically appropriate time slot based on a built-in reference of over 100 common drug patterns:
+
+| Time | Examples |
+|---|---|
+| **Morning 🌅** | Levothyroxine, lisinopril, metformin (AM dose), furosemide, sertraline |
+| **Midday ☀️** | Metformin (midday dose), some antibiotics, buspirone |
+| **Evening 🌆** | Warfarin, metformin (PM dose), apixaban, doxycycline |
+| **Bedtime 🌙** | Statins (atorvastatin, rosuvastatin), mirtazapine, quetiapine, montelukast, zolpidem |
+
+Unrecognised medications are placed in the morning slot as a safe default. A disclosure note is always shown at the bottom reminding you to check your actual prescription labels.
+
+### Symptom Journal
+
+The symptom journal at the bottom of each result view lets you log symptoms between visits (e.g. "fatigue since Monday", "headache after meals"). Logged symptoms are automatically included as context in your next document analysis, so Claude can note any connections.
+
+---
+
+## Privacy & Data Handling
+
+MediSimple is built around a strict privacy model:
+
+- **Raw files are never stored.** Uploaded images and PDFs are read into browser memory, sent to the Claude API for analysis, then immediately cleared.
+- **Raw text is never stored.** Pasted document text is sent to the Claude API and discarded.
+- **Only AI summaries are saved.** The structured JSON result — containing no raw document content — is optionally saved to your browser's `localStorage` to enable trend tracking.
+- **No account required.** There is no login, no user profile, and no server-side session.
+- **No MediSimple server.** The only network call is directly from your browser to the Anthropic API.
+- **You can delete everything.** Use the trash icon on any history item to delete individual documents, or use "Clear all local data" in the sidebar to wipe everything at once.
+
+---
+
+## Reading Level Selector
+
+Before analyzing a document, choose how you want the results written:
+
+| Option | Description |
+|---|---|
+| **ELI10 😊** | Explain like I'm 10 — very simple words, short sentences, no jargon |
+| **Standard** | 8th-grade reading level — the default, suitable for most patients |
+| **Keep medical terms** | Preserves clinical language for medically literate readers |
+
+This setting affects the entire analysis output, including the summary, term explanations, flagged findings, and doctor questions.
+
+---
+
+## Dark Mode
+
+Click the **Dark / Light** toggle in the top-right corner of the navigation bar to switch themes. Your preference is saved to `localStorage` and applied automatically on your next visit.
+
+---
+
+## Document History & Trends
+
+Every document you analyze is saved to your browser's local history. Access past results from the sidebar on the left. If you have two or more lab results, MediSimple automatically displays a **Value trends** panel in the sidebar showing which metrics went up, down, or held steady across visits.
+
+To delete a document, hover over it in the sidebar and click the trash icon that appears. To clear all history, use the "Clear all local data" button at the bottom of the sidebar.
+
+---
+
+## Supported Document Types
+
+MediSimple works with any clinical document. It is optimised for:
+
+- **Lab results** — CBC, metabolic panels, lipid panels, HbA1c, thyroid, liver function, kidney function
+- **Prescriptions** — medication lists, drug names, dosages, frequency
+- **Discharge summaries** — hospital discharge paperwork, inpatient notes
+- **Radiology reports** — X-ray, MRI, CT scan, ultrasound findings
+- **Other** — GP letters, specialist referrals, immunisation records, allergy reports
+
+File formats accepted: **JPG, PNG, HEIC, WEBP, PDF**. Multiple files can be uploaded together (e.g. front and back of a document).
+
+---
+
+## Technical Notes
+
+- **Model:** `claude-sonnet-4-20250514`
+- **Max tokens per analysis:** 4,096
+- **Architecture:** Single HTML file — no build system, no npm, no server
+- **Storage:** Browser `localStorage` only — keys `ms3_hist`, `ms3_syms`, `ms3_dark`
+- **Image export:** Uses [html2canvas](https://html2canvas.hertzen.com/) (loaded on demand from cdnjs)
+- **Fonts:** DM Sans + DM Serif Display via Google Fonts
+- **Browser support:** All modern browsers (Chrome, Firefox, Safari, Edge)
+
+---
+
+## Disclaimer
+
+MediSimple is an informational tool only. It does not constitute medical advice, diagnosis, or treatment. Always consult a qualified healthcare professional about any health concerns or before making any decisions based on information provided by this tool. Never disregard professional medical advice or delay seeking it because of something you read in a MediSimple analysis.
